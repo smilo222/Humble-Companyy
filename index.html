@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Humble Innovations | Next-Gen Tech from Bulawayo, Zimbabwe</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r161/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@300;400;700;900&family=Exo+2:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --neon-cyan: #00f5ff;
+            --neon-magenta: #ff00ff;
+            --neon-lime: #39ff14;
+            --plasma-bg: #0a0a1f;
+            --glass-primary: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(0, 245, 255, 0.2);
+            --glow-neon: 0 0 40px rgba(0, 245, 255, 0.6);
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-snap-type: y mandatory;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--plasma-bg);
+            color: white;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* Hyper-Futuristic Cursor */
+        .cursor {
+            position: fixed;
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: var(--glow-neon), inset 0 0 20px rgba(0, 245, 255, 0.3);
+            backdrop-filter: blur(10px);
+            animation: pulse 2s infinite;
+        }
+
+        .cursor::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        .cursor-follower {
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            border: 1px solid var(--neon-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.3;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
+        /* Fullscreen 3D Canvas */
+        #scene-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Floating Navigation */
+        .nav-float {
+            position: fixed;
+            top: 50px;
+            right: 50px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .nav-btn {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--glass-border);
+            background: var(--glass-primary);
+            backdrop-filter: blur(30px);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--neon-cyan);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: var(--glow-neon);
+        }
+
+        .nav-btn:hover {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            transform: translateY(-10px) rotate(360deg);
+            box-shadow: 0 20px 60px rgba(0, 245, 255, 0.6);
+        }
+
+        /* HERO - CYBERSPACE */
+        .hero-section {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            scroll-snap-align: start;
+        }
+
+        .hero-matrix {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 49%, rgba(0, 245, 255, 0.03) 50%, transparent 51%);
+            background-size: 20px 20px;
+            animation: matrixMove 20s linear infinite;
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        @keyframes matrixMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
+
+        .hero-title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(5rem, 15vw, 10rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-magenta) 40%, var(--neon-lime) 80%, white 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 2rem;
+            filter: drop-shadow(0 0 60px rgba(0, 245, 255, 0.8));
+            animation: titleGlitch 3s ease-in-out infinite;
+        }
+
+        @keyframes titleGlitch {
+            0%, 100% { transform: translate(0); }
+            10% { transform: translate(-2px, 2px); }
+            20% { transform: translate(2px, -2px); }
+            30% { transform: translate(-1px, 1px); }
+            40% { transform: translate(1px, -1px); }
+            50% { transform: translate(-2px, 2px); }
+            60% { transform: translate(2px, -2px); }
+            70% { transform: translate(-1px, 1px); }
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 300;
+            max-width: 1000px;
+            margin-bottom: 4rem;
+            opacity: 0.95;
+            letter-spacing: 2px;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 4rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 900;
+            color: var(--neon-lime);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            letter-spacing: 1px;
+        }
+
+        /* GLASSMORPHISM PANELS */
+        .glass-panel {
+            background: var(--glass-primary);
+            backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            box-shadow: var(--glow-neon), 0 25px 80px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.7s;
+        }
+
+        .glass-panel:hover::before {
+            left: 100%;
+        }
+
+        /* SECTIONS */
+        .section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 100px 10%;
+            scroll-snap-align: start;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(4rem, 10vw, 7rem);
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 6rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            filter: drop-shadow(0 0 40px rgba(0, 245, 255, 0.6));
+        }
+
+        /* Services Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 4rem;
+        }
+
+        .service-card {
+            padding: 4rem 3rem;
+            text-align: center;
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .service-card:hover {
+            transform: translateY(-30px) scale(1.05);
+        }
+
+        .service-icon {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 3rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            box-shadow: var(--glow-neon), inset 0 0 40px rgba(255, 255, 255, 0.2);
+            animation: iconFloat 6s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .service-card h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-lime));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Portfolio */
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 3rem;
+            margin-top: 4rem;
+        }
+
+        .portfolio-item {
+            height: 450px;
+            position: relative;
+            border-radius: 32px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .portfolio-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.95), rgba(255, 0, 255, 0.95));
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: all 0.5s ease;
+            padding: 4rem;
+            text-align: center;
+            backdrop-filter: blur(20px);
+        }
+
+        .portfolio-item:hover .portfolio-overlay {
+            opacity: 1;
+        }
+
+        /* Contact */
+        .contact-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8rem;
+            max-width: 1400px;
+        }
+
+        .contact-info h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, var(--neon-lime), var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .contact-link {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            background: var(--glass-primary);
+            border-radius: 24px;
+            transition: all 0.4s ease;
+            border: 1px solid var(--glass-border);
+        }
+
+        .contact-link:hover {
+            background: rgba(0, 245, 255, 0.15);
+            transform: translateX(20px);
+            box-shadow: var(--glow-neon);
+        }
+
+        .contact-link i {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            width: 60px;
+        }
+
+        /* Form */
+        .contact-form {
+            padding: 4rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .form-input, .form-textarea {
+            padding: 2.5rem;
+            background: var(--glass-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            color: white;
+            font-size: 1.2rem;
+            font-family: 'Exo 2', sans-serif;
+            backdrop-filter: blur(20px);
+            transition: all 0.4s ease;
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+            box-shadow: var(--glow-neon);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 2.5rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            border: none;
+            border-radius: 32px;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: black;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: var(--glow-neon);
+        }
+
+        .submit-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 60px rgba(0, 245, 255, 0.8);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .nav-float {
+                right: 20px;
+                top: 20px;
+            }
+            
+            .contact-container {
+                grid-template-columns: 1fr;
+                gap: 4rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .services-grid, .portfolio-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero-stats {
+                flex-direction: column;
+                gap: 2rem;
+            }
+        }
+
+        /* Scroll Indicators */
+        .scroll-hint {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', monospace;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hyper-Futuristic Cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+
+    <!-- Scroll Hint -->
+    <div class="scroll-hint">
+        <i class="fas fa-chevron-down"></i> SCROLL
+    </div>
+
+    <!-- 3D Cosmic Background -->
+    <canvas id="scene-canvas"></canvas>
+
+    <!-- Floating Navigation -->
+    <nav class="nav-float">
+        <div class="nav-btn" data-target="#hero"><i class="fas fa-home"></i></div>
+        <div class="nav-btn" data-target="#services"><i class="fas fa-layer-group"></i></div>
+        <div class="nav-btn" data-target="#portfolio"><i class="fas fa-th-large"></i></div>
+        <div class="nav-btn" data-target="#contact"><i class="fas fa-comments"></i></div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section id="hero" class="hero-section">
+        <div class="hero-matrix"></div>
+        <h1 class="hero-title">HUMBLE INNOVATIONS</h1>
+        <p class="hero-subtitle">
+            CYBERSPACE ARCHITECTS | BULAWAYO, ZIMBABWE<br>
+            FOUNDED BY JAMES JAY JAY JUNIOR KAHONDO
+        </p>
+        <div class="hero-stats">
+            <div class="stat-item">
+                <span class="stat-number">∞</span>
+                <span class="stat-label">INNOVATIONS</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">24/7</span>
+                <span class="stat-label">ONLINE</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">2050</span>
+                <span class="stat-label">VISION</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section id="services" class="section">
+        <div class="container">
+            <h2 class="section-title">QUANTUM SERVICES</h2>
+            <div class="services-grid">
+                <div class="service-card glass-panel">
+                    <div class="service-icon">
+                        <i class="fas fa-brain-circuit"></i>
+                    </div>
+                    <h3>NEURAL NETWORKS</h3>
+                    <p>Advanced AI/ML systems, deep learning architectures, computer vision, NLP, and autonomous agents.</p>
+                </div>
+                <div class="service-card glass-panel">
+                    <div class="service-icon">
+                        <i class="fas fa-cube"></i>
+                    </div>
+                    <h3>WEB3 PROTOCOLS</h3>
+                    <p>Decentralized applications, smart contracts, blockchain infrastructure, DeFi, and NFT ecosystems.</p>
+                </div>
+                <div class="service-card glass-panel">
+                    <div class="service-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <h3>METAVERSE</h3>
+                    <p>Immersive 3D worlds, AR/VR experiences, spatial computing, and persistent digital universes.</p>
+                </div>
+                <div class="service-card glass-panel">
+                    <div class="service-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h3>QUANTUM CLOUD</h3>
+                    <p>Hyper-scalable infrastructure, serverless architectures, edge computing, and AI-optimized cloud.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PORTFOLIO -->
+    <section id="portfolio" class="section">
+        <div class="container">
+            <h2 class="section-title">MISSION LOG</h2>
+            <div class="portfolio-grid">
+                <div class="portfolio-item glass-panel">
+                    <div class="portfolio-overlay">
+                        <h3>QUANTUM TRADER</h3>
+                        <p>AI-Powered Trading Platform<br>React • TensorFlow • WebSocket</p>
+                    </div>
+                </div>
+                <div class="portfolio-item glass-panel">
+                    <div class="portfolio-overlay">
+                        <h3>NEON MARKET</h3>
+                        <p>Next-Gen NFT Marketplace<br>Solidity • IPFS • Three.js</p>
+                    </div>
+                </div>
+                <div class="portfolio-item glass-panel">
+                    <div class="portfolio-overlay">
+                        <h3>CYBERVERSE</h3>
+                        <p>Metaverse Headquarters<br>Babylon.js • Node.js • WebRTC</p>
+                    </div>
+                </div>
+                <div class="portfolio-item glass-panel">
+                    <div class="portfolio-overlay">
+                        <h3>DATA NEXUS</h3>
+                        <p>Real-time Analytics Dashboard<br>Next.js • D3.js • GraphQL</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="section">
+        <div class="container">
+            <h2 class="section-title">NEURAL LINK</h2>
+            <div class="contact-container">
+                <div>
+                    <h3>TRANSMISSION COORDINATES</h3>
+                    <div class="contact-link">
+                        <i class="fas fa-location-dot"></i>
+                        <div>
+                            <strong>BULAWAYO, ZIMBABWE</strong><br>
+                            African Cyber Capital
+                        </div>
+                    </div>
+                    <div class="contact-link">
+                        <i class="fas fa-envelope"></i>
+                        <div>neuraljj2305615@gmail.com</div>
+                    </div>
+                    <div class="contact-link">
+                        <i class="fas fa-phone"></i>
+                        <div>+263771166781 CYBER 01</div>
+                    </div>
+                </div>
+                <form class="contact-form glass-panel">
+                    <div class="form-group">
+                        <input type="text" class="form-input" placeholder="CALLSIGN" required>
+                        <input type="email" class="form-input" placeholder="NEURAL ID" required>
+                        <textarea class="form-textarea" rows="5" placeholder="MISSION BRIEF" required></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-paper-plane"></i> TRANSMIT
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // HYPER-FUTURISTIC 3D SCENE
+        class CyberScene {
+            constructor() {
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
+                this.renderer = new THREE.WebGLRenderer({ 
+                    canvas: document.getElementById('scene-canvas'), 
+                    alpha: true, 
+                    antialias: true 
+                });
+                this.stars = [];
+                this.geometries = [];
+                this.particles = 50000;
+                this.init();
+                this.animate();
+            }
+
+            init() {
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                
+                this.camera.position.z = 100;
+
+                // COSMIC STARS
+                const starGeometry = new THREE.BufferGeometry();
+                const starPositions = new Float32Array(this.particles * 3);
+                
+                for (let i = 0; i < this.particles; i++) {
+                    starPositions[i * 3] = (Math.random() - 0.5) * 4000;
+                    starPositions[i * 3 + 1] = (Math.random() - 0.5) * 4000;
+                    starPositions[i * 3 + 2] = (Math.random() - 0.5) * 4000;
+                }
+                
+                starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+                const starMaterial = new THREE.PointsMaterial({
+                    color: 0x00f5ff,
+                    size: 2,
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending
+                });
+                
+                this.stars = new THREE.Points(starGeometry, starMaterial);
+                this.scene.add(this.stars);
+
+                // FLOATING GEOMETRIES
+                this.createPlasmaGeometries();
+
+                // DYNAMIC LIGHTS
+                this.ambientLight = new THREE.AmbientLight(0x0a0a1f, 0.3);
+                this.scene.add(this.ambientLight);
+
+                this.pointLight1 = new THREE.PointLight(0x00f5ff, 2, 200);
+                this.pointLight1.position.set(50, 50, 50);
+                this.scene.add(this.pointLight1);
+
+                this.pointLight2 = new THREE.PointLight(0xff00ff, 2, 200);
+                this.pointLight2.position.set(-50, -50, -50);
+                this.scene.add(this.pointLight2);
+            }
+
+            createPlasmaGeometries() {
+                const types = [
+                    () => new THREE.TorusKnotGeometry(8, 3, 100, 16),
+                    () => new THREE.IcosahedronGeometry(12, 1),
+                    () => new THREE.DodecahedronGeometry(12),
+                    () => new THREE.OctahedronGeometry(12)
+                ];
+
+                for (let i = 0; i < 20; i++) {
+                    const geometry = types[Math.floor(Math.random() * types.length)]();
+                    const colors = [0x00f5ff, 0xff00ff, 0x39ff14, 0xffffff];
+                    const material = new THREE.MeshPhysicalMaterial({
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        metalness: 0.9,
+                        roughness: 0.1,
+                        transparent: true,
+                        opacity: 0.6,
+                        clearcoat: 1.0,
+                        clearcoatRoughness: 0.1,
+                        emissive: colors[Math.floor(Math.random() * colors.length)],
+                        emissiveIntensity: 0.3
+                    });
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(
+                        (Math.random() - 0.5) * 200,
+                        (Math.random() - 0.5) * 200,
+                        (Math.random() - 0.5) * 200
+                    );
+                    
+                    mesh.rotation.set(
+                        Math.random() * Math.PI,
+                        Math.random() * Math.PI,
+                        Math.random() * Math.PI
+                    );
+                    
+                    this.scene.add(mesh);
+                    this.geometries.push({
+                        mesh,
+                        rotationSpeed: { x: 0.005 + Math.random() * 0.01, y: 0.008 + Math.random() * 0.01, z: 0.003 + Math.random() * 0.008 },
+                        floatSpeed: 0.002 + Math.random() * 0.003
+                    });
+                }
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                // Stars rotation
+                this.stars.rotation.y += 0.0003;
+                this.stars.rotation.x += 0.0002;
+
+                // Geometries animation
+                this.geometries.forEach(({ mesh, rotationSpeed, floatSpeed }) => {
+                    mesh.rotation.x += rotationSpeed.x;
+                    mesh.rotation.y += rotationSpeed.y;
+                    mesh.rotation.z += rotationSpeed.z;
+                    mesh.position.y += Math.sin(Date.now() * floatSpeed + mesh.position.x) * 0.5;
+                });
+
+                // Dynamic lights
+                const time = Date.now() * 0.001;
+                this.pointLight1.position.x = Math.cos(time) * 60;
+                this.pointLight1.position.y = Math.sin(time * 1.2) * 60;
+                this.pointLight2.position.x = Math.sin(time * 0.8) * 60;
+                this.pointLight2.position.y = Math.cos(time * 1.5) * 60;
+
+                this.renderer.render(this.scene, this.camera);
+            }
+
+            resize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        }
+
+        // Initialize Cyber Scene
+        gsap.registerPlugin(ScrollTrigger);
+        const cyberScene = new CyberScene();
+
+        // Advanced Cursor
+        let mouseX = 0, mouseY = 0;
+        const cursor = document.querySelector('.cursor');
+        const follower = document.querySelector('.cursor-follower');
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            gsap.to(cursor, { 
+                left: mouseX, 
+                top: mouseY, 
+                duration: 0.1 
+            });
+            gsap.to(follower, { 
+                left: mouseX - 30, 
+                top: mouseY - 30, 
+                scale: 1.5,
+                duration: 0.4 
+            });
+        });
+
+        // Navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = document.querySelector(btn.dataset.target);
+                target.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+
+        // Hover Effects
+        document.querySelectorAll('.service-card, .portfolio-item, .contact-link').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                gsap.to(cursor, { scale: 2, duration: 0.2 });
+                gsap.to(follower, { scale: 2, duration: 0.3 });
+            });
+            el.addEventListener('mouseleave', () => {
+                gsap.to(cursor, { scale: 1, duration: 0.2 });
+                gsap.to(follower, { scale: 1, duration: 0.3 });
+            });
+        });
+
+        // GSAP Scroll Animations
+        gsap.from('.hero-title', { 
+            scale: 0.5, 
+            opacity: 0, 
+            duration: 2, 
+            ease: 'elastic.out(1, 0.5)' 
+        });
+
+        gsap.from('.hero-stats .stat-item', {
+            y: 100,
+            opacity: 0,
+            duration: 1,
+            stagger: 0.2,
+            scrollTrigger: {
+                trigger: '.hero-section',
+                start: 'top center'
+            }
+        });
+
+        // Parallax Effect
+        window.addEventListener('scroll', () => {
+            const scrolled = window.scrollY;
+            cyberScene.camera.position.z = 100 + scrolled * 0.1;
+            cyberScene.stars.rotation.y = scrolled * 0.0005;
+        });
+
+        // Responsive
+        window.addEventListener('resize', () => cyberScene.resize());
+
+        // Form
+        document.querySelector('form').addEventListener('submit', e => {
+            e.preventDefault();
+            gsap.to('.submit-btn', {
+                scale: 0.95,
+                duration: 0.1,
+                yoyo: true,
+                repeat: 1
+            });
+            alert('🚀 TRANSMISSION RECEIVED | RESPONSE IN 24h');
+        });
+    </script>
+</body>
+</html>
